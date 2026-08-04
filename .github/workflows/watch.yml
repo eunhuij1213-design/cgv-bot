@@ -36,17 +36,25 @@ jobs:
 
       - name: state.json 커밋
         run: |
-          if [ -z "$(git status --porcelain state.json)" ]; then
-            echo "상태 변화 없음"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state.json
-          git commit -m "chore: state 갱신 [skip ci]"
-          # 다른 실행이 먼저 푸시했을 수 있으니 rebase 후 재시도
+
+          # state.json은 방금 API로 새로 만든 결과라 원격 버전보다 항상 최신이다.
+          # 따라서 rebase로 병합하지 않고(충돌 시 재시도가 영원히 실패한다)
+          # 원격에 맞춘 뒤 우리 파일을 덮어쓰는 방식으로 푸시한다.
+          cp state.json "$RUNNER_TEMP/state.json"
           for i in 1 2 3; do
-            git pull --rebase --autostash && git push && exit 0
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            cp "$RUNNER_TEMP/state.json" state.json
+            if [ -z "$(git status --porcelain state.json)" ]; then
+              echo "상태 변화 없음"
+              exit 0
+            fi
+            git add state.json
+            git commit -q -m "chore: state 갱신 [skip ci]"
+            git push -q origin main && exit 0
+            echo "푸시 실패, 재시도 $i/3"
             sleep 5
           done
           exit 1
