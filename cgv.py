@@ -67,10 +67,7 @@ class Screening:
 
     @property
     def label(self) -> str:
-        place = self.scns_nm
-        if self.site_no != config.SITE_NO:  # 씨네드쉐프 등 별관은 극장명까지 표기
-            place = f"{self.site_nm} {self.scns_nm}"
-        return f"{place} {self.start_hhmm}~{self.end_hhmm} · {self.prod_nm}"
+        return f"{self.scns_nm} {self.start_hhmm}~{self.end_hhmm} · {self.prod_nm}"
 
 
 def fmt_time(hhmm: str) -> str:
@@ -113,8 +110,12 @@ def _to_int(value, default: int = 0) -> int:
 
 
 def parse(payload: dict) -> list[Screening]:
-    """API 응답 JSON -> Screening 목록. 예매 오픈 전이면 빈 리스트."""
-    rows = payload.get("data") or []
+    """API 응답 JSON -> Screening 목록. 예매 오픈 전이면 빈 리스트.
+
+    응답에는 씨네드쉐프 용산(siteNo=P013) 회차도 섞여 오는데,
+    감시 대상은 용산아이파크몰 본관(config.SITE_NO)뿐이라 걸러낸다.
+    """
+    rows = [r for r in (payload.get("data") or []) if r.get("siteNo") == config.SITE_NO]
     screenings = [
         Screening(
             scn_ymd=row.get("scnYmd", ""),
