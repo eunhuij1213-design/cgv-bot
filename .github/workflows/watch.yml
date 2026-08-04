@@ -31,6 +31,7 @@ jobs:
       - name: 감시 실행 (60초 간격 × 약 5분)
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PYTHONUNBUFFERED: "1"  # 로그가 잡 실행 중 실시간으로 보이도록
         run: python main.py --watch 60 --duration 270
 
       - name: state.json 커밋
