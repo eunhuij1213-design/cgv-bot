@@ -20,6 +20,10 @@ RTCTL_SCOP_CD = "08"
 # 감시할 요일 (0=월 ... 4=금, 5=토, 6=일)
 TARGET_WEEKDAYS = (4, 5, 6)
 
+# 상영관 필터: 이 키워드가 상영관명/상품명에 들어간 회차만 감시한다.
+# 빈 문자열로 두면 극장의 모든 상영관을 감시한다.
+SCREEN_KEYWORD = os.getenv("SCREEN_KEYWORD", "IMAX")
+
 # 오늘로부터 며칠 뒤까지의 금/토/일을 감시할지
 LOOKAHEAD_DAYS = int(os.getenv("LOOKAHEAD_DAYS", "30"))
 

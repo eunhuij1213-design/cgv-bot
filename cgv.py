@@ -122,13 +122,30 @@ def _to_int(value, default: int = 0) -> int:
         return default
 
 
+def _matches_screen(row: dict) -> bool:
+    """SCREEN_KEYWORD가 상영관명/상품명에 들어 있는지."""
+    keyword = config.SCREEN_KEYWORD.strip().upper()
+    if not keyword:
+        return True
+    haystack = " ".join(
+        str(row.get(field) or "")
+        for field in ("expoScnsNm", "scnsNm", "expoProdNm", "prodNm", "movkndDsplNm")
+    ).upper()
+    return keyword in haystack
+
+
 def parse(payload: dict) -> list[Screening]:
     """API 응답 JSON -> Screening 목록. 예매 오픈 전이면 빈 리스트.
 
     응답에는 씨네드쉐프 용산(siteNo=P013) 회차도 섞여 오는데,
     감시 대상은 용산아이파크몰 본관(config.SITE_NO)뿐이라 걸러낸다.
+    상영관은 SCREEN_KEYWORD(기본 IMAX)로 한 번 더 좁힌다.
     """
-    rows = [r for r in (payload.get("data") or []) if r.get("siteNo") == config.SITE_NO]
+    rows = [
+        r
+        for r in (payload.get("data") or [])
+        if r.get("siteNo") == config.SITE_NO and _matches_screen(r)
+    ]
     screenings = [
         Screening(
             scn_ymd=row.get("scnYmd", ""),
