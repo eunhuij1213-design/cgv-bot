@@ -1,0 +1,51 @@
+name: CGV __ __
+
+on:
+  schedule:
+    # GitHub Actions cron __ ___ 5___. 1_ ___ _ ___ --watch_ ___.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # __ ___ state.json_ ____ __ ___ ___ ___
+  group: cgv-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: __ __ (60_ __ _ _ 5_)
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python main.py --watch 60 --duration 270
+
+      - name: state.json __
+        run: |
+          if [ -z "$(git status --porcelain state.json)" ]; then
+            echo "__ __ __"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git commit -m "chore: state __ [skip ci]"
+          # __ ___ __ ____ _ ___ rebase _ ___
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep 5
+          done
+          exit 1

@@ -1,0 +1,35 @@
+name: tC
+
+on:
+  schedule:
+    # GitHub Actions cron 최소 간격은 5분이다. 1분 감시는 잡 안에서 --watch로 돌린다.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # 이전 실행이 state.json을 커밋하는 중에 겹치지 않도록 직렬화
+  group: cgv-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: 감시 실행 (60초 간격 × 약 5분)
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python main.py --watch 60 --duration 270
+
