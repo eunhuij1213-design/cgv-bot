@@ -26,6 +26,7 @@ LOOKAHEAD_DAYS = int(os.getenv("LOOKAHEAD_DAYS", "30"))
 # --- 실행 옵션 ---------------------------------------------------------------
 STATE_PATH = Path(os.getenv("STATE_PATH", BASE_DIR / "state.json"))
 WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+# 알림에 걸리는 바로가기 링크. {scn_ymd} {site_no} {mov_no} 를 치환해 쓸 수 있다.
 BOOKING_URL = os.getenv("BOOKING_URL", "https://cgv.co.kr/")
 
 REQUEST_TIMEOUT = 10

@@ -86,6 +86,19 @@ def fmt_date(scn_ymd: str) -> str:
     return f"{d.isoformat()}({WEEKDAY_KR[d.weekday()]})"
 
 
+def booking_url(scn_ymd: str) -> str:
+    """해당 날짜 예매 페이지 링크. 템플릿이 아니면 설정값을 그대로 쓴다."""
+    try:
+        return config.BOOKING_URL.format(
+            scn_ymd=scn_ymd,
+            site_no=config.SITE_NO,
+            mov_no=config.MOV_NO,
+        )
+    except (KeyError, IndexError):
+        log.warning("BOOKING_URL 템플릿에 알 수 없는 항목이 있습니다: %s", config.BOOKING_URL)
+        return config.BOOKING_URL
+
+
 def today_kst() -> date:
     from datetime import datetime
 

@@ -6,7 +6,7 @@ import time
 import requests
 
 import config
-from cgv import fmt_date
+from cgv import booking_url, fmt_date
 from state import OpenEvent, SeatEvent
 
 log = logging.getLogger(__name__)
@@ -34,10 +34,11 @@ def open_embed(event: OpenEvent) -> dict:
     if extra > 0:
         description += f" (아래 {len(fields)}개만 표시)"
 
+    link = booking_url(event.scn_ymd)
     return {
         "title": f"🎟️ 예매 오픈! {config.MOV_NAME}",
-        "url": config.BOOKING_URL,
-        "description": description,
+        "url": link,
+        "description": f"{description}\n\n[▶ 예매하러 가기]({link})",
         "color": COLOR_OPEN,
         "fields": fields,
     }
@@ -45,13 +46,15 @@ def open_embed(event: OpenEvent) -> dict:
 
 def seat_embed(event: SeatEvent) -> dict:
     s = event.screening
+    link = booking_url(s.scn_ymd)
     return {
         "title": f"💺 자리 났다! {config.MOV_NAME}",
-        "url": config.BOOKING_URL,
+        "url": link,
         "description": (
             f"**{fmt_date(s.scn_ymd)}** · {config.SITE_NAME}\n"
             f"{s.label}\n"
-            f"매진 → 잔여 **{s.free_seats}** / {s.total_seats}석"
+            f"매진 → 잔여 **{s.free_seats}** / {s.total_seats}석\n\n"
+            f"[▶ 예매하러 가기]({link})"
         ),
         "color": COLOR_SEAT,
     }
