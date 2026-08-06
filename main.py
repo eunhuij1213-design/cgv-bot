@@ -35,10 +35,17 @@ def run_once(*, dry_run: bool = False) -> int:
 
     open_events, seat_events, new_state = state.diff(prev_state, current, first_run=first_run)
 
+    # 자리가 난 회차만 좌석 배치도를 추가 조회해 일반석/이동식을 구분한다.
+    if seat_events:
+        session = cgv.make_session()
+        for e in seat_events:
+            e.breakdown = cgv.fetch_seat_breakdown(session, e.screening)
+
     for e in open_events:
         log.info("[예매 오픈] %s - %d회차", cgv.fmt_date(e.scn_ymd), len(e.screenings))
     for e in seat_events:
-        log.info("[자리 남음] %s %s - 0 -> %d석", cgv.fmt_date(e.screening.scn_ymd), e.screening.label, e.screening.free_seats)
+        detail = f" ({e.breakdown})" if e.breakdown else ""
+        log.info("[자리 남음] %s %s - 0 -> %d석%s", cgv.fmt_date(e.screening.scn_ymd), e.screening.label, e.screening.free_seats, detail)
     if not open_events and not seat_events:
         opened = sum(1 for v in new_state["dates"].values() if v["open"])
         log.info("변화 없음 (오픈된 날짜 %d/%d)", opened, len(new_state["dates"]))

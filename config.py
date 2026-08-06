@@ -16,6 +16,7 @@ SITE_NAME = "CGV 용산아이파크몰"
 MOV_NO = "30001323"  # 오디세이
 MOV_NAME = "오디세이"
 RTCTL_SCOP_CD = "08"
+SEAT_AREA_NO = "001"  # 좌석 배치도 구역. 용산 IMAX관은 단일 구역
 
 # 감시할 요일 (0=월 ... 4=금, 5=토, 6=일)
 TARGET_WEEKDAYS = (4, 5, 6)

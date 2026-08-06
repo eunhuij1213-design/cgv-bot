@@ -18,7 +18,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import config
-from cgv import Screening
+from cgv import Screening, SeatBreakdown
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ class SeatEvent:
 
     screening: Screening
     prev_free: int
+    breakdown: SeatBreakdown | None = None  # 잔여 좌석 종류. 조회 실패 시 None
 
 
 def empty_state() -> dict:

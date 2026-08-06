@@ -13,6 +13,10 @@ import config
 log = logging.getLogger(__name__)
 
 API_URL = "https://cgv.co.kr/api/v1/booking/searchSchByMov"
+SEAT_URL = "https://cgv.co.kr/api/v1/booking/searchIfSeatData"
+
+# 좌석 판매형태 코드. 04=이동식(휠체어 이용객용) 좌석.
+MOVABLE_SALE_FORM = "04"
 
 # curl 같은 기본 UA는 CGV WAF(mets01081)에 차단된다. 브라우저 헤더 필수.
 HEADERS = {
@@ -84,6 +88,51 @@ def fmt_date(scn_ymd: str) -> str:
     except (ValueError, IndexError):
         return scn_ymd
     return f"{d.isoformat()}({WEEKDAY_KR[d.weekday()]})"
+
+
+@dataclass(frozen=True)
+class SeatBreakdown:
+    """잔여 좌석을 판매형태별로 나눈 결과."""
+
+    general: int  # 일반 좌석
+    movable: int  # 이동식(휠체어석)
+
+    @property
+    def total(self) -> int:
+        return self.general + self.movable
+
+    def __str__(self) -> str:
+        return f"일반 {self.general}석 / 이동식(휠체어석) {self.movable}석"
+
+
+def fetch_seat_breakdown(session: requests.Session, s: Screening) -> SeatBreakdown | None:
+    """회차의 좌석 배치도를 조회해 잔여 좌석 종류를 센다. 실패하면 None.
+
+    예매 가능 좌석은 seatSaleYn == "Y"인 좌석이다(시간표 API의 frSeatCnt와 일치 확인).
+    판매완료/결제진행중/판매중지 좌석은 모두 "N"으로 내려온다.
+    """
+    params = {
+        "coCd": config.CO_CD,
+        "siteNo": s.site_no,
+        "scnYmd": s.scn_ymd,
+        "scnsNo": s.scns_no,
+        "scnSseq": s.scn_sseq,
+        "seatAreaNo": config.SEAT_AREA_NO,
+        "cusgdCd": "01",
+    }
+    try:
+        res = session.get(SEAT_URL, params=params, timeout=config.REQUEST_TIMEOUT)
+        payload = res.json()
+        if res.status_code != 200 or payload.get("statusCode") != 0:
+            raise CGVError(f"HTTP {res.status_code} statusCode={payload.get('statusCode')}")
+        seats = payload["data"]["items"][0]["seats"]
+    except (requests.RequestException, ValueError, KeyError, IndexError, CGVError) as exc:
+        log.warning("%s 좌석 배치도 조회 실패: %s", s.key, exc)
+        return None
+
+    available = [x for x in seats if x.get("seatSaleYn") == "Y"]
+    movable = sum(1 for x in available if x.get("seatSalfrmCd") == MOVABLE_SALE_FORM)
+    return SeatBreakdown(general=len(available) - movable, movable=movable)
 
 
 def booking_url(scn_ymd: str) -> str:

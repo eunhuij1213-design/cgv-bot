@@ -12,7 +12,8 @@ from state import OpenEvent, SeatEvent
 log = logging.getLogger(__name__)
 
 COLOR_OPEN = 0x2ECC71  # 초록
-COLOR_SEAT = 0xE67E22  # 주황
+COLOR_SEAT = 0xE67E22  # 주황 - 일반석이 났을 때
+COLOR_MOVABLE = 0x95A5A6  # 회색 - 이동식(휠체어석)만 남았을 때
 MAX_FIELDS = 25  # 디스코드 embed 필드 상한
 
 
@@ -45,15 +46,30 @@ def open_embed(event: OpenEvent) -> dict:
 
 def seat_embed(event: SeatEvent) -> dict:
     s = event.screening
+    b = event.breakdown
+
+    # 이동식(휠체어석)만 남은 경우가 실제로 흔해서, 제목만 보고도 구분되게 한다.
+    if b is None:
+        title = f"💺 자리 났다! {config.MOV_NAME} · 잔여 {s.free_seats}석 (종류 확인 실패)"
+        color = COLOR_SEAT
+    elif b.general > 0:
+        title = f"💺 일반석 {b.general}석 났다! {config.MOV_NAME}"
+        color = COLOR_SEAT
+    else:
+        title = f"♿ 이동식(휠체어석) {b.movable}석만 남음 · {config.MOV_NAME}"
+        color = COLOR_MOVABLE
+
+    lines = [
+        f"**{fmt_date(s.scn_ymd)}** · {config.SITE_NAME}",
+        s.label,
+        f"매진 → 잔여 **{s.free_seats}** / {s.total_seats}석",
+        f"→ {b}" if b else "→ 좌석 종류 확인 실패",
+    ]
     return {
-        "title": f"💺 자리 났다! {config.MOV_NAME}",
+        "title": title,
         "url": booking_url(s.scn_ymd),  # 제목이 예매 페이지 링크가 된다
-        "description": (
-            f"**{fmt_date(s.scn_ymd)}** · {config.SITE_NAME}\n"
-            f"{s.label}\n"
-            f"매진 → 잔여 **{s.free_seats}** / {s.total_seats}석"
-        ),
-        "color": COLOR_SEAT,
+        "description": "\n".join(lines),
+        "color": color,
     }
 
 
